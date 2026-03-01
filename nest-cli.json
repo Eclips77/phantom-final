@@ -61,6 +61,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/playlist-api/tsconfig.app.json"
       }
+    },
+    "mongo-service": {
+      "type": "application",
+      "root": "apps/mongo-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/mongo-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/mongo-service/tsconfig.app.json"
+      }
     }
   },
   "monorepo": true,
