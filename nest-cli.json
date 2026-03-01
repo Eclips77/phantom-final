@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/phantom-final/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/phantom-final/tsconfig.app.json"
+  },
+  "projects": {
+    "logger": {
+      "type": "library",
+      "root": "libs/logger",
+      "entryFile": "index",
+      "sourceRoot": "libs/logger/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/logger/tsconfig.lib.json"
+      }
+    },
+    "phantom-final": {
+      "type": "application",
+      "root": "apps/phantom-final",
+      "entryFile": "main",
+      "sourceRoot": "apps/phantom-final/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/phantom-final/tsconfig.app.json"
+      }
+    },
+    "rabbit-mq": {
+      "type": "library",
+      "root": "libs/rabbit-mq",
+      "entryFile": "index",
+      "sourceRoot": "libs/rabbit-mq/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/rabbit-mq/tsconfig.lib.json"
+      }
+    },
+    "video-api": {
+      "type": "application",
+      "root": "apps/video-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/video-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/video-api/tsconfig.app.json"
+      }
+    }
+  },
+  "monorepo": true,
+  "root": "apps/phantom-final"
+}
