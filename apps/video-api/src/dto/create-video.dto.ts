@@ -1,6 +1,7 @@
 export class CreateVideoDto {
   title: string;
-  description?: string;
-  duration?: number | string; // ב-form-data מגיע קודם כמחרוזת
+  description: string;
+  language: string;
+  duration: number | string;
   genre: string;
 }

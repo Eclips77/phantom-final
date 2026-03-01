@@ -1,6 +1,6 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { RabbitMqPublisher } from './publisher/rabbit-mq.publisher';
-import { RABBIT_MQ_OPTIONS, RabbitMqConnectionOptions } from './types/message.types';
+import { RABBIT_MQ_OPTIONS, RabbitMqConnectionOptions, RabbitMqAsyncOptions } from './types/message.types';
 
 @Module({})
 export class RabbitMqModule {
@@ -8,9 +8,22 @@ export class RabbitMqModule {
     return {
       module: RabbitMqModule,
       providers: [
+        { provide: RABBIT_MQ_OPTIONS, useValue: options },
+        RabbitMqPublisher,
+      ],
+      exports: [RabbitMqPublisher],
+    };
+  }
+
+  static registerAsync(options: RabbitMqAsyncOptions): DynamicModule {
+    return {
+      module: RabbitMqModule,
+      imports: options.imports ?? [],
+      providers: [
         {
           provide: RABBIT_MQ_OPTIONS,
-          useValue: options,
+          inject: options.inject ?? [],
+          useFactory: options.useFactory,
         },
         RabbitMqPublisher,
       ],

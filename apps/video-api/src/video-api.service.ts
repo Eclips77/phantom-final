@@ -1,19 +1,31 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Request as ExpressRequest } from 'express';
 import { randomUUID } from 'crypto';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { RabbitMqPublisher } from '@app/rabbit-mq';
+import { LoggerService } from '@app/logger';
+import { VideoApiContext, VideoApiEvent } from './constants/log-events';
 
 @Injectable()
 export class VideoApiService {
-  private readonly mongoServiceUrl = process.env.MONGO_SERVICE_URL || 'http://localhost:3001';
-
-  constructor(private readonly rabbitMqPublisher: RabbitMqPublisher) {}
+  constructor(
+    private readonly rabbitMqPublisher: RabbitMqPublisher,
+    private readonly logger: LoggerService,
+    private readonly config: ConfigService,
+  ) {}
 
   async processVideoUpload(createVideoDto: CreateVideoDto, file: Express.Multer.File) {
-    console.log('Validating metadata successfully, file saved to:', file.path);
+    const mongoServiceUrl = this.config.get<string>('videoApi.mongoServiceUrl')!;
+
+    this.logger.log(VideoApiEvent.FILE_SAVED, VideoApiContext.SERVICE, {
+      fileName: file.filename,
+      filePath: file.path,
+      mimeType: file.mimetype,
+    });
 
     try {
-      const mongoResponse = await fetch(`${this.mongoServiceUrl}/videos`, {
+      const mongoResponse = await fetch(`${mongoServiceUrl}/videos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -25,13 +37,20 @@ export class VideoApiService {
       });
 
       if (!mongoResponse.ok) {
-        throw new InternalServerErrorException('Failed to save to Mongo Service at processVideoUpload');
+        throw new InternalServerErrorException('Failed to save video metadata to Mongo Service');
       }
 
       const savedVideoData = await mongoResponse.json();
 
+      this.logger.log(VideoApiEvent.METADATA_SAVED, VideoApiContext.SERVICE, {
+        videoId: savedVideoData._id,
+        title: createVideoDto.title,
+      });
+
+      const eventId = randomUUID();
+
       this.rabbitMqPublisher.emit('encode_video', {
-        eventId: randomUUID(),
+        eventId,
         timestamp: new Date().toISOString(),
         source: 'video-api',
         payload: {
@@ -41,41 +60,55 @@ export class VideoApiService {
         },
       });
 
+      this.logger.log(VideoApiEvent.ENCODE_QUEUED, VideoApiContext.SERVICE, {
+        eventId,
+        videoId: savedVideoData._id,
+      });
+
       return {
         message: 'Video uploaded and metadata forwarded successfully, encoding queued!',
         data: savedVideoData,
       };
     } catch (error) {
-      console.error(error);
+      this.logger.error(
+        VideoApiEvent.UPLOAD_FAILED,
+        (error as Error).stack,
+        VideoApiContext.SERVICE,
+        { fileName: file.filename, error: (error as Error).message },
+      );
       throw new InternalServerErrorException('Could not process video upload completely');
     }
   }
 
-  /**
-   * פונקציה כללית לטיפול בכל בקשה לא-POST ולהפנייתה ל-Mongo
-   */
-  async proxyToMongoService(req: Request, body?: any) {
+  async proxyToMongoService(req: ExpressRequest, body?: unknown) {
+    const mongoServiceUrl = this.config.get<string>('videoApi.mongoServiceUrl')!;
+    const url = `${mongoServiceUrl}${req.originalUrl}`;
+
+    this.logger.log(VideoApiEvent.PROXY_REQUEST, VideoApiContext.SERVICE, {
+      method: req.method,
+      url,
+    });
+
     try {
-      // לדוגמה, נוכל לעבד את בקשות מחיקה, או עידכון וידאו... 
-      const url = `${this.mongoServiceUrl}${req.originalUrl}`;
-      const config: any = {
+      const fetchConfig: RequestInit = {
         method: req.method,
-        headers: {
-          'Content-Type': 'application/json',
-          // אם קיים Authorization: req.headers.authorization,
-        },
+        headers: { 'Content-Type': 'application/json' },
       };
 
       if (req.method !== 'GET' && req.method !== 'HEAD' && body) {
-        config.body = JSON.stringify(body);
+        fetchConfig.body = JSON.stringify(body);
       }
 
-      const response = await fetch(url, config);
-
+      const response = await fetch(url, fetchConfig);
       return await response.json();
     } catch (err) {
-      console.error('Proxy Error to Mongo Service:', err);
-      throw new InternalServerErrorException('Error transparenting data to Mongo service');
+      this.logger.error(
+        VideoApiEvent.PROXY_ERROR,
+        (err as Error).stack,
+        VideoApiContext.SERVICE,
+        { method: req.method, url, error: (err as Error).message },
+      );
+      throw new InternalServerErrorException('Error forwarding request to Mongo Service');
     }
   }
 }

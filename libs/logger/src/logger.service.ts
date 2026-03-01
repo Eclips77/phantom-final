@@ -55,23 +55,23 @@ export class LoggerService implements NestLoggerService {
     });
   }
 
-  log(message: any, context?: string) {
-    this.logger.info(message, { context });
+  log(message: any, context?: string, meta?: Record<string, unknown>): void {
+    this.logger.info(message, { context, ...meta });
   }
 
-  error(message: any, trace?: string, context?: string) {
-    this.logger.error(message, { trace, context });
+  error(message: any, trace?: string, context?: string, meta?: Record<string, unknown>): void {
+    this.logger.error(message, { trace, context, ...meta });
   }
 
-  warn(message: any, context?: string) {
-    this.logger.warn(message, { context });
+  warn(message: any, context?: string, meta?: Record<string, unknown>): void {
+    this.logger.warn(message, { context, ...meta });
   }
 
-  debug(message: any, context?: string) {
-    this.logger.debug(message, { context });
+  debug(message: any, context?: string, meta?: Record<string, unknown>): void {
+    this.logger.debug(message, { context, ...meta });
   }
 
-  verbose(message: any, context?: string) {
-    this.logger.verbose(message, { context });
+  verbose(message: any, context?: string, meta?: Record<string, unknown>): void {
+    this.logger.verbose(message, { context, ...meta });
   }
 }

@@ -11,4 +11,10 @@ export interface RabbitMqConnectionOptions {
   durable?: boolean;
 }
 
+export interface RabbitMqAsyncOptions {
+  inject?: any[];
+  imports?: any[];
+  useFactory: (...args: any[]) => RabbitMqConnectionOptions | Promise<RabbitMqConnectionOptions>;
+}
+
 export const RABBIT_MQ_OPTIONS = Symbol('RABBIT_MQ_OPTIONS');
