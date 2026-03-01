@@ -26,6 +26,15 @@
         "tsConfigPath": "apps/phantom-final/tsconfig.app.json"
       }
     },
+    "rabbit-mq": {
+      "type": "library",
+      "root": "libs/rabbit-mq",
+      "entryFile": "index",
+      "sourceRoot": "libs/rabbit-mq/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/rabbit-mq/tsconfig.lib.json"
+      }
+    },
     "video-api": {
       "type": "application",
       "root": "apps/video-api",

@@ -27,6 +27,12 @@
       ],
       "@app/logger/*": [
         "libs/logger/src/*"
+      ],
+      "@app/rabbit-mq": [
+        "libs/rabbit-mq/src"
+      ],
+      "@app/rabbit-mq/*": [
+        "libs/rabbit-mq/src/*"
       ]
     }
   }
