@@ -1,16 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { VideoApiModule } from './video-api.module';
 import { LoggerService } from '@app/logger';
+import { PlaylistApiModule } from './playlist-api.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(VideoApiModule, { bufferLogs: true });
+  const app = await NestFactory.create(PlaylistApiModule, { bufferLogs: true });
 
   const logger = app.get(LoggerService);
   app.useLogger(logger);
 
   const config = app.get(ConfigService);
-  const port = config.get<number>('videoApi.port')!;
+  const port = config.get<number>('playlistApi.port')!;
 
   await app.listen(port);
 }

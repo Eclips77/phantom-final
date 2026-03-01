@@ -43,6 +43,24 @@
       "compilerOptions": {
         "tsConfigPath": "apps/video-api/tsconfig.app.json"
       }
+    },
+    "genre-api": {
+      "type": "application",
+      "root": "apps/genre-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/genre-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/genre-api/tsconfig.app.json"
+      }
+    },
+    "playlist-api": {
+      "type": "application",
+      "root": "apps/playlist-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/playlist-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/playlist-api/tsconfig.app.json"
+      }
     }
   },
   "monorepo": true,

@@ -1,2 +1,4 @@
 export * from './rabbit-mq.module';
-export * from './rabbit-mq.service';
+export * from './publisher/rabbit-mq.publisher';
+export * from './consumer/rabbit-mq.consumer';
+export * from './types/message.types';
