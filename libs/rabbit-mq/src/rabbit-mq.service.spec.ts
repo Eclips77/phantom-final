@@ -1,18 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RabbitMqService } from './rabbit-mq.service';
+import { RabbitMqPublisher } from './publisher/rabbit-mq.publisher';
+import { RABBIT_MQ_OPTIONS } from './types/message.types';
 
-describe('RabbitMqService', () => {
-  let service: RabbitMqService;
+describe('RabbitMqPublisher', () => {
+  let publisher: RabbitMqPublisher;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RabbitMqService],
+      providers: [
+        {
+          provide: RABBIT_MQ_OPTIONS,
+          useValue: { url: 'amqp://localhost:5672', queue: 'test_queue', durable: false },
+        },
+        RabbitMqPublisher,
+      ],
     }).compile();
 
-    service = module.get<RabbitMqService>(RabbitMqService);
+    publisher = module.get<RabbitMqPublisher>(RabbitMqPublisher);
   });
 
   it('should be defined', () => {
-    expect(service).toBeDefined();
+    expect(publisher).toBeDefined();
   });
 });
