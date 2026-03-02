@@ -7,10 +7,13 @@ import { loggerContext } from './logger.context';
 export class LoggerMiddleware implements NestMiddleware {
   use(req: Request, _res: Response, next: NextFunction) {
     const store = new Map<string, string>();
-    const requestId = (req.headers['x-request-id'] as string) || (req.headers['x-correlation-id'] as string) || randomUUID();
-    
+    const requestId =
+      (req.headers['x-request-id'] as string) ||
+      (req.headers['x-correlation-id'] as string) ||
+      randomUUID();
+
     store.set('requestId', requestId);
-    
+
     loggerContext.run(store, () => {
       next();
     });

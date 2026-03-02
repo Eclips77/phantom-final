@@ -15,8 +15,13 @@ export class VideoApiService {
     private readonly config: ConfigService,
   ) {}
 
-  async processVideoUpload(createVideoDto: CreateVideoDto, file: Express.Multer.File) {
-    const mongoServiceUrl = this.config.get<string>('videoApi.mongoServiceUrl')!;
+  async processVideoUpload(
+    createVideoDto: CreateVideoDto,
+    file: Express.Multer.File,
+  ) {
+    const mongoServiceUrl = this.config.get<string>(
+      'videoApi.mongoServiceUrl',
+    )!;
 
     this.logger.log(VideoApiEvent.FILE_SAVED, VideoApiContext.SERVICE, {
       fileName: file.filename,
@@ -37,7 +42,9 @@ export class VideoApiService {
       });
 
       if (!mongoResponse.ok) {
-        throw new InternalServerErrorException('Failed to save video metadata to Mongo Service');
+        throw new InternalServerErrorException(
+          'Failed to save video metadata to Mongo Service',
+        );
       }
 
       const savedVideoData = await mongoResponse.json();
@@ -66,7 +73,8 @@ export class VideoApiService {
       });
 
       return {
-        message: 'Video uploaded and metadata forwarded successfully, encoding queued!',
+        message:
+          'Video uploaded and metadata forwarded successfully, encoding queued!',
         data: savedVideoData,
       };
     } catch (error) {
@@ -76,12 +84,16 @@ export class VideoApiService {
         VideoApiContext.SERVICE,
         { fileName: file.filename, error: (error as Error).message },
       );
-      throw new InternalServerErrorException('Could not process video upload completely');
+      throw new InternalServerErrorException(
+        'Could not process video upload completely',
+      );
     }
   }
 
   async proxyToMongoService(req: ExpressRequest, body?: unknown) {
-    const mongoServiceUrl = this.config.get<string>('videoApi.mongoServiceUrl')!;
+    const mongoServiceUrl = this.config.get<string>(
+      'videoApi.mongoServiceUrl',
+    )!;
     const url = `${mongoServiceUrl}${req.originalUrl}`;
 
     this.logger.log(VideoApiEvent.PROXY_REQUEST, VideoApiContext.SERVICE, {
@@ -108,7 +120,9 @@ export class VideoApiService {
         VideoApiContext.SERVICE,
         { method: req.method, url, error: (err as Error).message },
       );
-      throw new InternalServerErrorException('Error forwarding request to Mongo Service');
+      throw new InternalServerErrorException(
+        'Error forwarding request to Mongo Service',
+      );
     }
   }
 }

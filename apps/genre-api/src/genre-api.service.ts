@@ -50,7 +50,10 @@ export class GenreApiService {
     return response.json() as Promise<T>;
   }
 
-  private async assertNameUnique(name: string, excludeId?: string): Promise<void> {
+  private async assertNameUnique(
+    name: string,
+    excludeId?: string,
+  ): Promise<void> {
     const results = await this.fetchMongo<unknown[]>(
       `/genres?name=${encodeURIComponent(name)}`,
     );
@@ -60,7 +63,9 @@ export class GenreApiService {
       : [];
 
     if (conflicts.length > 0) {
-      this.logger.warn(GenreApiEvent.DUPLICATE_NAME, GenreApiContext.SERVICE, { name });
+      this.logger.warn(GenreApiEvent.DUPLICATE_NAME, GenreApiContext.SERVICE, {
+        name,
+      });
       throw new ConflictException(`Genre with name "${name}" already exists`);
     }
   }
@@ -70,7 +75,9 @@ export class GenreApiService {
       throw new BadRequestException('Genre name is required');
     }
 
-    this.logger.log(GenreApiEvent.CREATING, GenreApiContext.SERVICE, { name: dto.name });
+    this.logger.log(GenreApiEvent.CREATING, GenreApiContext.SERVICE, {
+      name: dto.name,
+    });
 
     await this.assertNameUnique(dto.name);
 
@@ -79,7 +86,9 @@ export class GenreApiService {
       body: JSON.stringify(dto),
     });
 
-    this.logger.log(GenreApiEvent.CREATED, GenreApiContext.SERVICE, { name: dto.name });
+    this.logger.log(GenreApiEvent.CREATED, GenreApiContext.SERVICE, {
+      name: dto.name,
+    });
     return created;
   }
 
@@ -103,10 +112,15 @@ export class GenreApiService {
 
   async update(id: string, dto: UpdateGenreDto): Promise<unknown> {
     if (!dto.name && !dto.videoIds) {
-      throw new BadRequestException('At least one field must be provided for update');
+      throw new BadRequestException(
+        'At least one field must be provided for update',
+      );
     }
 
-    this.logger.log(GenreApiEvent.UPDATING, GenreApiContext.SERVICE, { id, ...dto });
+    this.logger.log(GenreApiEvent.UPDATING, GenreApiContext.SERVICE, {
+      id,
+      ...dto,
+    });
 
     if (dto.name?.trim()) {
       await this.assertNameUnique(dto.name, id);
