@@ -10,7 +10,11 @@ describe('RabbitMqPublisher', () => {
       providers: [
         {
           provide: RABBIT_MQ_OPTIONS,
-          useValue: { url: 'amqp://localhost:5672', queue: 'test_queue', durable: false },
+          useValue: {
+            url: 'amqp://localhost:5672',
+            queue: 'test_queue',
+            durable: false,
+          },
         },
         RabbitMqPublisher,
       ],

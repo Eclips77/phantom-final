@@ -30,7 +30,10 @@ import { videoApiConfig } from './config/video-api.config';
             destination: uploadDir,
             filename: (_req, file, callback) => {
               const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-              callback(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
+              callback(
+                null,
+                `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
+              );
             },
           }),
         };

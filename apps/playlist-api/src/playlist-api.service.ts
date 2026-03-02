@@ -74,9 +74,13 @@ export class PlaylistApiService {
       .map((r) => (r.reason as Error).message);
 
     if (missing.length > 0) {
-      this.logger.warn(PlaylistApiEvent.VIDEOS_NOT_FOUND, PlaylistApiContext.SERVICE, {
-        missingVideoIds: missing,
-      });
+      this.logger.warn(
+        PlaylistApiEvent.VIDEOS_NOT_FOUND,
+        PlaylistApiContext.SERVICE,
+        {
+          missingVideoIds: missing,
+        },
+      );
       throw new BadRequestException(
         `The following video IDs do not exist: ${missing.join(', ')}`,
       );
@@ -88,7 +92,9 @@ export class PlaylistApiService {
       throw new BadRequestException('Playlist name is required');
     }
 
-    this.logger.log(PlaylistApiEvent.CREATING, PlaylistApiContext.SERVICE, { name: dto.name });
+    this.logger.log(PlaylistApiEvent.CREATING, PlaylistApiContext.SERVICE, {
+      name: dto.name,
+    });
 
     if (dto.videoIds?.length) {
       await this.assertVideosExist(dto.videoIds);
@@ -113,7 +119,9 @@ export class PlaylistApiService {
   }
 
   async findOne(id: string): Promise<unknown> {
-    this.logger.log(PlaylistApiEvent.FETCH_ONE, PlaylistApiContext.SERVICE, { id });
+    this.logger.log(PlaylistApiEvent.FETCH_ONE, PlaylistApiContext.SERVICE, {
+      id,
+    });
 
     try {
       return await this.fetchMongo<unknown>(`/playlists/${id}`);
@@ -127,10 +135,15 @@ export class PlaylistApiService {
 
   async update(id: string, dto: UpdatePlaylistDto): Promise<unknown> {
     if (!dto.name && !dto.videoIds) {
-      throw new BadRequestException('At least one field must be provided for update');
+      throw new BadRequestException(
+        'At least one field must be provided for update',
+      );
     }
 
-    this.logger.log(PlaylistApiEvent.UPDATING, PlaylistApiContext.SERVICE, { id, ...dto });
+    this.logger.log(PlaylistApiEvent.UPDATING, PlaylistApiContext.SERVICE, {
+      id,
+      ...dto,
+    });
 
     if (dto.videoIds?.length) {
       await this.assertVideosExist(dto.videoIds);
@@ -142,7 +155,9 @@ export class PlaylistApiService {
         body: JSON.stringify(dto),
       });
 
-      this.logger.log(PlaylistApiEvent.UPDATED, PlaylistApiContext.SERVICE, { id });
+      this.logger.log(PlaylistApiEvent.UPDATED, PlaylistApiContext.SERVICE, {
+        id,
+      });
       return updated;
     } catch (err) {
       if (err instanceof HttpException && err.getStatus() === 404) {
@@ -153,14 +168,18 @@ export class PlaylistApiService {
   }
 
   async remove(id: string): Promise<unknown> {
-    this.logger.log(PlaylistApiEvent.DELETING, PlaylistApiContext.SERVICE, { id });
+    this.logger.log(PlaylistApiEvent.DELETING, PlaylistApiContext.SERVICE, {
+      id,
+    });
 
     try {
       const result = await this.fetchMongo<unknown>(`/playlists/${id}`, {
         method: 'DELETE',
       });
 
-      this.logger.log(PlaylistApiEvent.DELETED, PlaylistApiContext.SERVICE, { id });
+      this.logger.log(PlaylistApiEvent.DELETED, PlaylistApiContext.SERVICE, {
+        id,
+      });
       return result;
     } catch (err) {
       if (err instanceof HttpException && err.getStatus() === 404) {
