@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
-import type { FilterQuery } from 'mongoose';
 import { Video } from './video.schema';
 import type { VideoDocument } from './video.schema';
 import type { CreateVideoDto } from './dto/create-video.dto';
@@ -14,12 +13,14 @@ import type { UpdateVideoDto } from './dto/update-video.dto';
 import type { SearchVideoDto } from './dto/search-video.dto';
 import { LoggerService } from '@app/logger';
 import { MongoServiceContext, VideoEvent } from '../constants/log-events';
+import { VideoQueryResolver } from './query/video-query.resolver';
 
 @Injectable()
 export class VideoService {
   constructor(
     @InjectModel(Video.name) private readonly videoModel: Model<VideoDocument>,
     private readonly logger: LoggerService,
+    private readonly queryResolver: VideoQueryResolver,
   ) {}
 
   private assertValidId(id: string): void {
@@ -30,11 +31,15 @@ export class VideoService {
 
   async create(dto: CreateVideoDto): Promise<VideoDocument> {
     if (!dto.title?.trim()) throw new BadRequestException('Video title is required');
+
     if (!dto.language?.trim()) throw new BadRequestException('Video language is required');
+
     if (!dto.genre?.trim()) throw new BadRequestException('Video genre is required');
+
     if (!dto.filePath || !dto.fileName || !dto.mimeType) {
       throw new BadRequestException('File metadata (filePath, fileName, mimeType) is required');
     }
+
     if (dto.duration == null || Number(dto.duration) < 0) {
       throw new BadRequestException('Video duration must be a non-negative number');
     }
@@ -47,11 +52,13 @@ export class VideoService {
 
     try {
       const video = await this.videoModel.create(dto);
+
       this.logger.log(VideoEvent.CREATED, MongoServiceContext.VIDEO_SERVICE, {
         videoId: String(video._id),
         title: video.title,
       });
       return video;
+
     } catch (err) {
       this.logger.error(
         VideoEvent.DB_ERROR,
@@ -65,8 +72,10 @@ export class VideoService {
 
   async findAll(): Promise<VideoDocument[]> {
     this.logger.log(VideoEvent.FETCH_ALL, MongoServiceContext.VIDEO_SERVICE);
+
     try {
       return await this.videoModel.find().sort({ createdAt: -1 }).lean().exec() as unknown as VideoDocument[];
+
     } catch (err) {
       this.logger.error(
         VideoEvent.DB_ERROR,
@@ -74,6 +83,7 @@ export class VideoService {
         MongoServiceContext.VIDEO_SERVICE,
         { operation: 'findAll', error: (err as Error).message },
       );
+
       throw new InternalServerErrorException('Failed to retrieve videos');
     }
   }
@@ -85,6 +95,7 @@ export class VideoService {
     let video: VideoDocument | null;
     try {
       video = await this.videoModel.findById(id).lean().exec() as unknown as VideoDocument | null;
+
     } catch (err) {
       this.logger.error(
         VideoEvent.DB_ERROR,
@@ -171,55 +182,14 @@ export class VideoService {
     return { deleted: true, id };
   }
 
-  async search(dto: SearchVideoDto): Promise<{ data: VideoDocument[]; total: number; page: number; limit: number }> {
+  async search(
+    dto: SearchVideoDto,
+  ): Promise<{ data: VideoDocument[]; total: number; page: number; limit: number }> {
     const page = Math.max(1, Number(dto.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(dto.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const filter: FilterQuery<VideoDocument> = {};
-
-    if (dto.title?.trim()) {
-      filter.$text = { $search: dto.title };
-    }
-
-    if (dto.language?.trim()) {
-      filter.language = dto.language.toLowerCase();
-    }
-
-    if (dto.genre?.trim()) {
-      filter.genre = dto.genre;
-    }
-
-    if (dto.minDuration !== undefined || dto.maxDuration !== undefined) {
-      filter.duration = {};
-      if (dto.minDuration !== undefined) {
-        const min = Number(dto.minDuration);
-        if (isNaN(min) || min < 0) throw new BadRequestException('minDuration must be a non-negative number');
-        filter.duration.$gte = min;
-      }
-      if (dto.maxDuration !== undefined) {
-        const max = Number(dto.maxDuration);
-        if (isNaN(max) || max < 0) throw new BadRequestException('maxDuration must be a non-negative number');
-        filter.duration.$lte = max;
-      }
-      if (filter.duration.$gte !== undefined && filter.duration.$lte !== undefined && filter.duration.$gte > filter.duration.$lte) {
-        throw new BadRequestException('minDuration cannot be greater than maxDuration');
-      }
-    }
-
-    if (dto.uploadedFrom || dto.uploadedTo) {
-      filter.createdAt = {};
-      if (dto.uploadedFrom) {
-        const from = new Date(dto.uploadedFrom);
-        if (isNaN(from.getTime())) throw new BadRequestException('uploadedFrom is not a valid ISO date');
-        filter.createdAt.$gte = from;
-      }
-      if (dto.uploadedTo) {
-        const to = new Date(dto.uploadedTo);
-        if (isNaN(to.getTime())) throw new BadRequestException('uploadedTo is not a valid ISO date');
-        filter.createdAt.$lte = to;
-      }
-    }
+    const filter = this.queryResolver.resolve(dto);
 
     this.logger.log(VideoEvent.SEARCHING, MongoServiceContext.VIDEO_SERVICE, {
       filter: JSON.stringify(filter),
@@ -229,7 +199,13 @@ export class VideoService {
 
     try {
       const [data, total] = await Promise.all([
-        this.videoModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean().exec() as unknown as VideoDocument[],
+        this.videoModel
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean()
+          .exec() as unknown as VideoDocument[],
         this.videoModel.countDocuments(filter).exec(),
       ]);
 

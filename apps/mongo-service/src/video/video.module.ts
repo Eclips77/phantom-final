@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Video, VideoSchema } from './video.schema';
 import { VideoService } from './video.service';
 import { VideoController } from './video.controller';
+import { VideoQueryResolver } from './query/video-query.resolver';
 import { LoggerModule } from '@app/logger';
 
 @Module({
@@ -11,7 +12,7 @@ import { LoggerModule } from '@app/logger';
     LoggerModule,
   ],
   controllers: [VideoController],
-  providers: [VideoService],
+  providers: [VideoService, VideoQueryResolver],
   exports: [VideoService],
 })
 export class VideoModule {}
