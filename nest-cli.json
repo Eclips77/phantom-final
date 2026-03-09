@@ -70,6 +70,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/mongo-service/tsconfig.app.json"
       }
+    },
+    "transcoder-service": {
+      "type": "application",
+      "root": "apps/transcoder-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/transcoder-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/transcoder-service/tsconfig.app.json"
+      }
     }
   },
   "monorepo": true,
