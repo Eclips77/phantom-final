@@ -1,0 +1,107 @@
+
+services:
+  phantom-final:
+    build:
+      context: .
+      dockerfile: apps/phantom-final/Dockerfile
+    container_name: phantom-final
+    ports:
+      - "${PHANTOM_FINAL_PORT:-3000}:${PHANTOM_FINAL_PORT:-3000}"
+    environment:
+      - PORT=${PHANTOM_FINAL_PORT:-3000}
+      - LOG_LEVEL=${LOG_LEVEL}
+    networks:
+      - app-network
+
+  video-api:
+    build:
+      context: .
+      dockerfile: apps/video-api/Dockerfile
+    container_name: video-api
+    ports:
+      - "${VIDEO_API_PORT:-3001}:${VIDEO_API_PORT:-3001}"
+    environment:
+      - PORT=${VIDEO_API_PORT:-3001}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL}
+      - UPLOAD_DIR=${UPLOAD_DIR}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - ENCODING_QUEUE=${ENCODING_QUEUE}
+      - LOG_LEVEL=${LOG_LEVEL}
+    volumes:
+      - video-uploads:/usr/src/app/uploads
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
+  genre-api:
+    build:
+      context: .
+      dockerfile: apps/genre-api/Dockerfile
+    container_name: genre-api
+    ports:
+      - "${GENRE_API_PORT:-3002}:${GENRE_API_PORT:-3002}"
+    environment:
+      - PORT=${GENRE_API_PORT:-3002}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL}
+      - LOG_LEVEL=${LOG_LEVEL}
+    networks:
+      - app-network
+
+  playlist-api:
+    build:
+      context: .
+      dockerfile: apps/playlist-api/Dockerfile
+    container_name: playlist-api
+    ports:
+      - "${PLAYLIST_API_PORT:-3003}:${PLAYLIST_API_PORT:-3003}"
+    environment:
+      - PORT=${PLAYLIST_API_PORT:-3003}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL}
+      - VIDEO_SERVICE_URL=${VIDEO_SERVICE_URL}
+      - LOG_LEVEL=${LOG_LEVEL}
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  video-uploads:
+  mongo-data:
+  minio-data:
