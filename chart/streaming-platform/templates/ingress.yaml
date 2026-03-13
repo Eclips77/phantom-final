@@ -1,0 +1,41 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /video
+            pathType: Prefix
+            backend:
+              service:
+                name: video-api
+                port:
+                  number: {{ .Values.videoApi.port }}
+          - path: /genre
+            pathType: Prefix
+            backend:
+              service:
+                name: genre-api
+                port:
+                  number: {{ .Values.genreApi.port }}
+          - path: /playlist
+            pathType: Prefix
+            backend:
+              service:
+                name: playlist-api
+                port:
+                  number: {{ .Values.playlistApi.port }}
+          - path: /stream
+            pathType: Prefix
+            backend:
+              service:
+                name: wowza-streamer
+                port:
+                  number: {{ .Values.wowzaStreamer.port }}
+{{- end -}}

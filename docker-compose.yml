@@ -1,15 +1,44 @@
-
 services:
-  phantom-final:
+  transcoder:
     build:
       context: .
-      dockerfile: apps/phantom-final/Dockerfile
-    container_name: phantom-final
+      dockerfile: apps/transcoder/Dockerfile
+    container_name: transcoder
     ports:
-      - "${PHANTOM_FINAL_PORT:-3000}:${PHANTOM_FINAL_PORT:-3000}"
+      - "${TRANSCODER_PORT:-3002}:${TRANSCODER_PORT:-3002}"
     environment:
-      - PORT=${PHANTOM_FINAL_PORT:-3000}
-      - LOG_LEVEL=${LOG_LEVEL}
+      - PORT=${TRANSCODER_PORT:-3002}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://rabbitmq:5672}
+      - ENCODING_QUEUE=${ENCODING_QUEUE:-video_encoding_queue}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-my-bucket}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - S3_ENDPOINT=${S3_ENDPOINT:-http://minio:9000}
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY:-minioadmin}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - video-uploads:/usr/src/app/uploads
+    depends_on:
+      - rabbitmq
+      - minio
+    networks:
+      - app-network
+
+  wowza-streamer:
+    build:
+      context: .
+      dockerfile: apps/wowza-streamer/Dockerfile
+    container_name: wowza-streamer
+    ports:
+      - "${WOWZA_STREAMER_PORT:-3003}:${WOWZA_STREAMER_PORT:-3003}"
+    environment:
+      - PORT=${WOWZA_STREAMER_PORT:-3003}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - WOWZA_URL=${WOWZA_URL:-http://wowza-server:1935/vods3/_definst_}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-my-bucket}
+    depends_on:
+      - mongo
     networks:
       - app-network
 
@@ -22,15 +51,16 @@ services:
       - "${VIDEO_API_PORT:-3001}:${VIDEO_API_PORT:-3001}"
     environment:
       - PORT=${VIDEO_API_PORT:-3001}
-      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL}
-      - UPLOAD_DIR=${UPLOAD_DIR}
-      - RABBITMQ_URL=${RABBITMQ_URL}
-      - ENCODING_QUEUE=${ENCODING_QUEUE}
-      - LOG_LEVEL=${LOG_LEVEL}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - UPLOAD_DIR=${UPLOAD_DIR:-/usr/src/app/uploads}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://rabbitmq:5672}
+      - ENCODING_QUEUE=${ENCODING_QUEUE:-video_encoding_queue}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - video-uploads:/usr/src/app/uploads
     depends_on:
       - rabbitmq
+      - mongo
     networks:
       - app-network
 
@@ -40,11 +70,13 @@ services:
       dockerfile: apps/genre-api/Dockerfile
     container_name: genre-api
     ports:
-      - "${GENRE_API_PORT:-3002}:${GENRE_API_PORT:-3002}"
+      - "${GENRE_API_PORT:-3004}:${GENRE_API_PORT:-3004}"
     environment:
-      - PORT=${GENRE_API_PORT:-3002}
-      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL}
-      - LOG_LEVEL=${LOG_LEVEL}
+      - PORT=${GENRE_API_PORT:-3004}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      - mongo
     networks:
       - app-network
 
@@ -54,12 +86,15 @@ services:
       dockerfile: apps/playlist-api/Dockerfile
     container_name: playlist-api
     ports:
-      - "${PLAYLIST_API_PORT:-3003}:${PLAYLIST_API_PORT:-3003}"
+      - "${PLAYLIST_API_PORT:-3005}:${PLAYLIST_API_PORT:-3005}"
     environment:
-      - PORT=${PLAYLIST_API_PORT:-3003}
-      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL}
-      - VIDEO_SERVICE_URL=${VIDEO_SERVICE_URL}
-      - LOG_LEVEL=${LOG_LEVEL}
+      - PORT=${PLAYLIST_API_PORT:-3005}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - VIDEO_SERVICE_URL=${VIDEO_SERVICE_URL:-http://video-api:3001}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      - mongo
+      - video-api
     networks:
       - app-network
 
@@ -89,11 +124,26 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
+    networks:
+      - app-network
+
+  minio-init:
+    image: minio/mc
+    container_name: minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin};
+      /usr/bin/mc mb myminio/${S3_BUCKET_NAME:-my-bucket} --ignore-existing;
+      /usr/bin/mc anonymous set public myminio/${S3_BUCKET_NAME:-my-bucket};
+      exit 0;
+      "
     networks:
       - app-network
 

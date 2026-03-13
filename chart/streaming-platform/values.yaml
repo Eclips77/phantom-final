@@ -1,0 +1,62 @@
+global:
+  environment: production
+  logLevel: info
+  s3BucketName: my-bucket
+
+ingress:
+  enabled: false
+  className: "nginx"
+  host: "api.streaming.local"
+
+mongo:
+  url: "http://mongo:27017" # Replace with actual mongodb service in k8s if external
+
+rabbitmq:
+  url: "amqp://rabbitmq:5672"
+
+minio:
+  endpoint: "http://minio:9000"
+  accessKey: "minioadmin"
+  secretKey: "minioadmin"
+  region: "us-east-1"
+
+wowza:
+  url: "http://wowza-server:1935/vods3/_definst_"
+
+videoApi:
+  replicaCount: 1
+  image:
+    repository: your-registry/video-api
+    tag: latest
+  port: 3001
+  uploadDir: "/usr/src/app/uploads"
+  encodingQueue: "video_encoding_queue"
+
+genreApi:
+  replicaCount: 1
+  image:
+    repository: your-registry/genre-api
+    tag: latest
+  port: 3004
+
+playlistApi:
+  replicaCount: 1
+  image:
+    repository: your-registry/playlist-api
+    tag: latest
+  port: 3005
+
+transcoder:
+  replicaCount: 1
+  image:
+    repository: your-registry/transcoder
+    tag: latest
+  port: 3002
+  encodingQueue: "video_encoding_queue"
+
+wowzaStreamer:
+  replicaCount: 1
+  image:
+    repository: your-registry/wowza-streamer
+    tag: latest
+  port: 3003

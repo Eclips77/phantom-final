@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-wowza-streamer
+spec:
+  replicas: {{ .Values.wowzaStreamer.replicaCount }}
+  selector:
+    matchLabels:
+      app: wowza-streamer
+  template:
+    metadata:
+      labels:
+        app: wowza-streamer
+    spec:
+      containers:
+        - name: wowza-streamer
+          image: "{{ .Values.wowzaStreamer.image.repository }}:{{ .Values.wowzaStreamer.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.wowzaStreamer.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.wowzaStreamer.port }}"
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel }}
+            - name: MONGO_SERVICE_URL
+              value: {{ .Values.mongo.url }}
+            - name: WOWZA_URL
+              value: {{ .Values.wowza.url }}
+            - name: S3_BUCKET_NAME
+              value: {{ .Values.global.s3BucketName }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wowza-streamer
+spec:
+  selector:
+    app: wowza-streamer
+  ports:
+    - protocol: TCP
+      port: {{ .Values.wowzaStreamer.port }}
+      targetPort: {{ .Values.wowzaStreamer.port }}

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-playlist-api
+spec:
+  replicas: {{ .Values.playlistApi.replicaCount }}
+  selector:
+    matchLabels:
+      app: playlist-api
+  template:
+    metadata:
+      labels:
+        app: playlist-api
+    spec:
+      containers:
+        - name: playlist-api
+          image: "{{ .Values.playlistApi.image.repository }}:{{ .Values.playlistApi.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.playlistApi.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.playlistApi.port }}"
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel }}
+            - name: MONGO_SERVICE_URL
+              value: {{ .Values.mongo.url }}
+            - name: VIDEO_SERVICE_URL
+              value: "http://video-api:{{ .Values.videoApi.port }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: playlist-api
+spec:
+  selector:
+    app: playlist-api
+  ports:
+    - protocol: TCP
+      port: {{ .Values.playlistApi.port }}
+      targetPort: {{ .Values.playlistApi.port }}
