@@ -53,7 +53,7 @@ export class StreamingService {
       const s3Bucket = this.config.get<string>('S3_BUCKET_NAME') ?? 'my-bucket';
 
       // Example Wowza VOD S3 format: http://wowza-server:1935/vods3/_definst_/mp4:amazonS3/bucket-name/uploads/video.mp4/playlist.m3u8
-      const streamUrl = `${wowzaUrl}/mp4:amazonS3/${s3Bucket}/${videoData.fileName}/playlist.m3u8`;
+      const streamUrl = `${wowzaUrl}/mp4:amazonS3/${s3Bucket}/${videoId}/${videoData.fileName}/playlist.m3u8`;
 
       this.logger.log('STREAMING_URL_GENERATED', 'StreamingService', {
         videoId,

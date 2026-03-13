@@ -5,13 +5,20 @@ import * as ffmpeg from 'fluent-ffmpeg';
 import type { EncodeVideoEvent } from './interfaces/encode-video.interface';
 import { EncodingEvent, EncodingContext } from './constants/log-events';
 import * as path from 'path';
+import * as fs from 'fs';
+import { S3Service } from '../s3/s3.service';
+import { ConfigService } from '@nestjs/config';
 
 // Set ffmpeg path using the installer
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 @Injectable()
 export class EncodingService {
-  constructor(private readonly logger: LoggerService) {}
+  constructor(
+    private readonly logger: LoggerService,
+    private readonly s3Service: S3Service,
+    private readonly config: ConfigService,
+  ) {}
 
   public async encodeVideo(event: EncodeVideoEvent): Promise<void> {
     const { videoId, filePath } = event.payload;
@@ -43,8 +50,19 @@ export class EncodingService {
         },
       );
 
-      // Here you could update the database (mongo) via an API call or another event
-      // indicating the video is encoded and available at `outputPath`.
+      // Upload encoded file to S3
+      const bucketName =
+        this.config.get<string>('S3_BUCKET_NAME') ?? 'my-bucket';
+      const destinationKey = `${videoId}/${path.basename(outputPath)}`;
+
+      await this.s3Service.uploadFile(outputPath, bucketName, destinationKey);
+
+      // Optionally update mongo here using a fetch call or via RabbitMQ event
+      // to let video-api know it's ready.
+
+      // Clean up local encoded file after successful upload
+      fs.unlinkSync(outputPath);
+      // We can also optionally unlink the original file `filePath` if it's stored on a shared volume
     } catch (error) {
       this.logger.error(
         EncodingEvent.ENCODING_FAILED,
