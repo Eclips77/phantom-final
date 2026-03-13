@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-video-api
+spec:
+  replicas: {{ .Values.videoApi.replicaCount }}
+  selector:
+    matchLabels:
+      app: video-api
+  template:
+    metadata:
+      labels:
+        app: video-api
+    spec:
+      containers:
+        - name: video-api
+          image: "{{ .Values.videoApi.image.repository }}:{{ .Values.videoApi.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.videoApi.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.videoApi.port }}"
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel }}
+            - name: MONGO_SERVICE_URL
+              value: {{ .Values.mongo.url }}
+            - name: RABBITMQ_URL
+              value: {{ .Values.rabbitmq.url }}
+            - name: ENCODING_QUEUE
+              value: {{ .Values.videoApi.encodingQueue }}
+            - name: UPLOAD_DIR
+              value: {{ .Values.videoApi.uploadDir }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-api
+spec:
+  selector:
+    app: video-api
+  ports:
+    - protocol: TCP
+      port: {{ .Values.videoApi.port }}
+      targetPort: {{ .Values.videoApi.port }}
