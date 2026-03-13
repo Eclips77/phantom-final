@@ -6,45 +6,38 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  mockConfigService,
+  mockLoggerService,
+} from '../../test/wowza-streamer.mock';
 
 describe('StreamingService', () => {
   let service: StreamingService;
-  let configServiceMock: jest.Mocked<ConfigService>;
-  let loggerServiceMock: jest.Mocked<LoggerService>;
 
   beforeEach(async () => {
-    configServiceMock = {
-      get: jest.fn().mockImplementation((key: string) => {
-        if (key === 'MONGO_SERVICE_URL') return 'http://mongo-mock:3001';
-        if (key === 'WOWZA_URL')
-          return 'http://wowza-mock:1935/vods3/_definst_';
-        if (key === 'S3_BUCKET_NAME') return 'mock-bucket';
-        return null;
-      }),
-    } as unknown as jest.Mocked<ConfigService>;
-
-    loggerServiceMock = {
-      log: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn(),
-    } as unknown as jest.Mocked<LoggerService>;
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StreamingService,
         {
           provide: ConfigService,
-          useValue: configServiceMock,
+          useValue: mockConfigService,
         },
         {
           provide: LoggerService,
-          useValue: loggerServiceMock,
+          useValue: mockLoggerService,
         },
       ],
     }).compile();
 
     service = module.get<StreamingService>(StreamingService);
+
+    // Make sure our mock gets return correct stub url explicitly for tests
+    jest.spyOn(service['config'], 'get').mockImplementation((key: string) => {
+      if (key === 'MONGO_SERVICE_URL') return 'http://mongo-mock:3001';
+      if (key === 'WOWZA_URL') return 'http://wowza-mock:1935/vods3/_definst_';
+      if (key === 'S3_BUCKET_NAME') return 'mock-bucket';
+      return null;
+    });
 
     // Mock global fetch
     global.fetch = jest.fn();
@@ -84,8 +77,7 @@ describe('StreamingService', () => {
         'http://wowza-mock:1935/vods3/_definst_/mp4:amazonS3/mock-bucket/12345/my-video.mp4/playlist.m3u8';
       expect(result).toEqual({ url: expectedUrl });
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(loggerServiceMock.log).toHaveBeenCalledWith(
+      expect(mockLoggerService.log).toHaveBeenCalledWith(
         'STREAMING_URL_GENERATED',
         'StreamingService',
         expect.objectContaining({
@@ -156,8 +148,7 @@ describe('StreamingService', () => {
         'Failed to retrieve streaming url',
       );
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(loggerServiceMock.error).toHaveBeenCalledWith(
+      expect(mockLoggerService.error).toHaveBeenCalledWith(
         'STREAMING_URL_ERROR',
         mockError.stack,
         'StreamingService',

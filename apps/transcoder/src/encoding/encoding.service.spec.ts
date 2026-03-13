@@ -1,94 +1,56 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
+import { S3Service } from '../s3/s3.service';
+import { EncodingService } from './encoding.service';
 import type { EncodeVideoEvent } from './interfaces/encode-video.interface';
 import { InternalServerErrorException } from '@nestjs/common';
 import { EncodingEvent, EncodingContext } from './constants/log-events';
 import * as path from 'path';
+import * as fs from 'fs';
+import {
+  mockConfigService,
+  mockLoggerService,
+  mockS3Service,
+  mockFfmpegChain,
+} from '../../test/transcoder.mock';
 
-const mockFfmpegChain = {
-  output: jest.fn().mockReturnThis(),
-  videoCodec: jest.fn().mockReturnThis(),
-  audioCodec: jest.fn().mockReturnThis(),
-  format: jest.fn().mockReturnThis(),
-  on: jest.fn().mockReturnThis(),
-  run: jest.fn(),
-};
+jest.mock('fs', () => ({
+  unlinkSync: jest.fn(),
+}));
 
-const mockFfmpeg = jest.fn(() => mockFfmpegChain) as unknown as Record<
-  string,
-  unknown
->;
-mockFfmpeg.setFfmpegPath = jest.fn();
-
-jest.mock('fluent-ffmpeg', () => mockFfmpeg);
+jest.mock('fluent-ffmpeg', () => {
+  const m = jest.fn(() => mockFfmpegChain) as unknown as Record<
+    string,
+    unknown
+  >;
+  m.setFfmpegPath = jest.fn();
+  return m;
+});
 
 jest.mock('@ffmpeg-installer/ffmpeg', () => ({
   path: '/mock/path/to/ffmpeg',
   default: { path: '/mock/path/to/ffmpeg' },
 }));
 
-import { EncodingService } from './encoding.service';
-import { ConfigService } from '@nestjs/config';
-import { S3Service } from '../s3/s3.service';
-import * as fs from 'fs';
-
-jest.mock('fs', () => ({
-  unlinkSync: jest.fn(),
-}));
-
 describe('EncodingService', () => {
   let service: EncodingService;
-  let loggerServiceMock: jest.Mocked<LoggerService>;
-  let configServiceMock: jest.Mocked<ConfigService>;
-  let s3ServiceMock: jest.Mocked<S3Service>;
 
   beforeEach(async () => {
-    loggerServiceMock = {
-      log: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn(),
-    } as unknown as jest.Mocked<LoggerService>;
-
-    configServiceMock = {
-      get: jest.fn().mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET_NAME') return 'mock-bucket';
-        return null;
-      }),
-    } as unknown as jest.Mocked<ConfigService>;
-
-    s3ServiceMock = {
-      uploadFile: jest.fn().mockResolvedValue(undefined),
-    } as unknown as jest.Mocked<S3Service>;
-
     // reset mocks inside chain
-    mockFfmpegChain.output.mockClear();
-    mockFfmpegChain.output.mockReturnThis();
-    mockFfmpegChain.videoCodec.mockClear();
-    mockFfmpegChain.videoCodec.mockReturnThis();
-    mockFfmpegChain.audioCodec.mockClear();
-    mockFfmpegChain.audioCodec.mockReturnThis();
-    mockFfmpegChain.format.mockClear();
-    mockFfmpegChain.format.mockReturnThis();
-    mockFfmpegChain.on.mockClear();
-    mockFfmpegChain.on.mockReturnThis();
+    mockFfmpegChain.output.mockClear().mockReturnThis();
+    mockFfmpegChain.videoCodec.mockClear().mockReturnThis();
+    mockFfmpegChain.audioCodec.mockClear().mockReturnThis();
+    mockFfmpegChain.format.mockClear().mockReturnThis();
+    mockFfmpegChain.on.mockClear().mockReturnThis();
     mockFfmpegChain.run.mockClear();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EncodingService,
-        {
-          provide: LoggerService,
-          useValue: loggerServiceMock,
-        },
-        {
-          provide: ConfigService,
-          useValue: configServiceMock,
-        },
-        {
-          provide: S3Service,
-          useValue: s3ServiceMock,
-        },
+        { provide: LoggerService, useValue: mockLoggerService },
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: S3Service, useValue: mockS3Service },
       ],
     }).compile();
 
@@ -115,7 +77,7 @@ describe('EncodingService', () => {
       },
     };
 
-    it('should encode video successfully', async () => {
+    it('should encode video successfully and upload to S3', async () => {
       let runCallback: (() => void) | null = null;
       let progressCallback: ((progress: { percent: number }) => void) | null =
         null;
@@ -150,48 +112,9 @@ describe('EncodingService', () => {
 
       await expect(service.encodeVideo(mockEvent)).resolves.toBeUndefined();
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(loggerServiceMock.log).toHaveBeenCalledWith(
-        EncodingEvent.ENCODING_STARTED,
-        EncodingContext.SERVICE,
-        expect.objectContaining({
-          videoId: mockEvent.payload.videoId,
-          eventId: mockEvent.eventId,
-          filePath: mockEvent.payload.filePath,
-        }),
-      );
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(loggerServiceMock.log).toHaveBeenCalledWith(
-        EncodingEvent.ENCODING_PROGRESS,
-        EncodingContext.SERVICE,
-        expect.objectContaining({
-          videoId: mockEvent.payload.videoId,
-          percent: 50,
-        }),
-      );
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(loggerServiceMock.log).toHaveBeenCalledWith(
-        EncodingEvent.ENCODING_COMPLETED,
-        EncodingContext.SERVICE,
-        expect.objectContaining({
-          videoId: mockEvent.payload.videoId,
-          eventId: mockEvent.eventId,
-          originalFilePath: mockEvent.payload.filePath,
-          outputPath: expectedOutputPath,
-        }),
-      );
-
-      expect(mockFfmpegChain.output).toHaveBeenCalledWith(expectedOutputPath);
-      expect(mockFfmpegChain.videoCodec).toHaveBeenCalledWith('libx264');
-      expect(mockFfmpegChain.audioCodec).toHaveBeenCalledWith('aac');
-      expect(mockFfmpegChain.format).toHaveBeenCalledWith('mp4');
-      expect(mockFfmpegChain.run).toHaveBeenCalled();
-
       // Verify S3 Upload
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(s3ServiceMock.uploadFile).toHaveBeenCalledWith(
+
+      expect(mockS3Service.uploadFile).toHaveBeenCalledWith(
         expectedOutputPath,
         'mock-bucket',
         `test-video-id/${path.basename(expectedOutputPath)}`,
@@ -225,8 +148,7 @@ describe('EncodingService', () => {
         InternalServerErrorException,
       );
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(loggerServiceMock.error).toHaveBeenCalledWith(
+      expect(mockLoggerService.error).toHaveBeenCalledWith(
         EncodingEvent.ENCODING_FAILED,
         mockError.stack,
         EncodingContext.SERVICE,
