@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LoggerService } from '@app/logger';
-import { EncodeVideoEvent } from './interfaces/encode-video.interface';
+import type { EncodeVideoEvent } from './interfaces/encode-video.interface';
 import { InternalServerErrorException } from '@nestjs/common';
 import { EncodingEvent, EncodingContext } from './constants/log-events';
 import * as path from 'path';

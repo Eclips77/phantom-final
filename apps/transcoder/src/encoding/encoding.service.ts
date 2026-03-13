@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { LoggerService } from '@app/logger';
 import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import * as ffmpeg from 'fluent-ffmpeg';
-import { EncodeVideoEvent } from './interfaces/encode-video.interface';
+import type { EncodeVideoEvent } from './interfaces/encode-video.interface';
 import { EncodingEvent, EncodingContext } from './constants/log-events';
 import * as path from 'path';
 

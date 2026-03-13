@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { EncodingService } from './encoding.service';
 import { LoggerService } from '@app/logger';
-import { EncodeVideoEvent } from './interfaces/encode-video.interface';
+import type { EncodeVideoEvent } from './interfaces/encode-video.interface';
 
 @Controller()
 export class EncodingController {
