@@ -1,11 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/phantom-final/src",
+  "sourceRoot": "apps/transcoder/src",
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "apps/phantom-final/tsconfig.app.json"
+    "tsConfigPath": "apps/transcoder/tsconfig.app.json"
   },
   "projects": {
     "logger": {
@@ -17,13 +17,13 @@
         "tsConfigPath": "libs/logger/tsconfig.lib.json"
       }
     },
-    "phantom-final": {
+    "transcoder": {
       "type": "application",
-      "root": "apps/phantom-final",
+      "root": "apps/transcoder",
       "entryFile": "main",
-      "sourceRoot": "apps/phantom-final/src",
+      "sourceRoot": "apps/transcoder/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/phantom-final/tsconfig.app.json"
+        "tsConfigPath": "apps/transcoder/tsconfig.app.json"
       }
     },
     "rabbit-mq": {
@@ -64,5 +64,5 @@
     }
   },
   "monorepo": true,
-  "root": "apps/phantom-final"
+  "root": "apps/transcoder"
 }

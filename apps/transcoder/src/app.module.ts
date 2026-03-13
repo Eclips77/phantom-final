@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggerModule } from '@app/logger';
 import { EncodingModule } from './encoding/encoding.module';
+import { StreamingModule } from './streaming/streaming.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { EncodingModule } from './encoding/encoding.module';
     }),
     LoggerModule,
     EncodingModule,
+    StreamingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
