@@ -28,10 +28,19 @@ jest.mock('@ffmpeg-installer/ffmpeg', () => ({
 }));
 
 import { EncodingService } from './encoding.service';
+import { ConfigService } from '@nestjs/config';
+import { S3Service } from '../s3/s3.service';
+import * as fs from 'fs';
+
+jest.mock('fs', () => ({
+  unlinkSync: jest.fn(),
+}));
 
 describe('EncodingService', () => {
   let service: EncodingService;
   let loggerServiceMock: jest.Mocked<LoggerService>;
+  let configServiceMock: jest.Mocked<ConfigService>;
+  let s3ServiceMock: jest.Mocked<S3Service>;
 
   beforeEach(async () => {
     loggerServiceMock = {
@@ -40,6 +49,17 @@ describe('EncodingService', () => {
       warn: jest.fn(),
       debug: jest.fn(),
     } as unknown as jest.Mocked<LoggerService>;
+
+    configServiceMock = {
+      get: jest.fn().mockImplementation((key: string) => {
+        if (key === 'S3_BUCKET_NAME') return 'mock-bucket';
+        return null;
+      }),
+    } as unknown as jest.Mocked<ConfigService>;
+
+    s3ServiceMock = {
+      uploadFile: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<S3Service>;
 
     // reset mocks inside chain
     mockFfmpegChain.output.mockClear();
@@ -60,6 +80,14 @@ describe('EncodingService', () => {
         {
           provide: LoggerService,
           useValue: loggerServiceMock,
+        },
+        {
+          provide: ConfigService,
+          useValue: configServiceMock,
+        },
+        {
+          provide: S3Service,
+          useValue: s3ServiceMock,
         },
       ],
     }).compile();
@@ -160,6 +188,18 @@ describe('EncodingService', () => {
       expect(mockFfmpegChain.audioCodec).toHaveBeenCalledWith('aac');
       expect(mockFfmpegChain.format).toHaveBeenCalledWith('mp4');
       expect(mockFfmpegChain.run).toHaveBeenCalled();
+
+      // Verify S3 Upload
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(s3ServiceMock.uploadFile).toHaveBeenCalledWith(
+        expectedOutputPath,
+        'mock-bucket',
+        `test-video-id/${path.basename(expectedOutputPath)}`,
+      );
+
+      // Verify unlinking
+
+      expect(fs.unlinkSync).toHaveBeenCalledWith(expectedOutputPath);
     });
 
     it('should handle encoding failure and throw InternalServerErrorException', async () => {

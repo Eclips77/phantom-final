@@ -81,7 +81,7 @@ describe('StreamingService', () => {
 
       // Verify returned URL construction
       const expectedUrl =
-        'http://wowza-mock:1935/vods3/_definst_/mp4:amazonS3/mock-bucket/my-video.mp4/playlist.m3u8';
+        'http://wowza-mock:1935/vods3/_definst_/mp4:amazonS3/mock-bucket/12345/my-video.mp4/playlist.m3u8';
       expect(result).toEqual({ url: expectedUrl });
 
       // eslint-disable-next-line @typescript-eslint/unbound-method

@@ -8,6 +8,15 @@
     "tsConfigPath": "apps/transcoder/tsconfig.app.json"
   },
   "projects": {
+    "genre-api": {
+      "type": "application",
+      "root": "apps/genre-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/genre-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/genre-api/tsconfig.app.json"
+      }
+    },
     "logger": {
       "type": "library",
       "root": "libs/logger",
@@ -17,13 +26,13 @@
         "tsConfigPath": "libs/logger/tsconfig.lib.json"
       }
     },
-    "transcoder": {
+    "playlist-api": {
       "type": "application",
-      "root": "apps/transcoder",
+      "root": "apps/playlist-api",
       "entryFile": "main",
-      "sourceRoot": "apps/transcoder/src",
+      "sourceRoot": "apps/playlist-api/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/transcoder/tsconfig.app.json"
+        "tsConfigPath": "apps/playlist-api/tsconfig.app.json"
       }
     },
     "rabbit-mq": {
@@ -35,6 +44,15 @@
         "tsConfigPath": "libs/rabbit-mq/tsconfig.lib.json"
       }
     },
+    "transcoder": {
+      "type": "application",
+      "root": "apps/transcoder",
+      "entryFile": "main",
+      "sourceRoot": "apps/transcoder/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/transcoder/tsconfig.app.json"
+      }
+    },
     "video-api": {
       "type": "application",
       "root": "apps/video-api",
@@ -44,22 +62,13 @@
         "tsConfigPath": "apps/video-api/tsconfig.app.json"
       }
     },
-    "genre-api": {
+    "wowza-streamer": {
       "type": "application",
-      "root": "apps/genre-api",
+      "root": "apps/wowza-streamer",
       "entryFile": "main",
-      "sourceRoot": "apps/genre-api/src",
+      "sourceRoot": "apps/wowza-streamer/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/genre-api/tsconfig.app.json"
-      }
-    },
-    "playlist-api": {
-      "type": "application",
-      "root": "apps/playlist-api",
-      "entryFile": "main",
-      "sourceRoot": "apps/playlist-api/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/playlist-api/tsconfig.app.json"
+        "tsConfigPath": "apps/wowza-streamer/tsconfig.app.json"
       }
     }
   },
