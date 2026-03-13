@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import { GenreApiService } from './genre-api.service';
-import { HttpException, InternalServerErrorException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 
 describe('GenreApiService', () => {
   let service: GenreApiService;
@@ -58,8 +58,12 @@ describe('GenreApiService', () => {
 
       (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
-      await expect(service['fetchMongo']('/test-path')).rejects.toThrow(HttpException);
-      await expect(service['fetchMongo']('/test-path')).rejects.toThrow('Invalid input');
+      await expect(service['fetchMongo']('/test-path')).rejects.toThrow(
+        HttpException,
+      );
+      await expect(service['fetchMongo']('/test-path')).rejects.toThrow(
+        'Invalid input',
+      );
 
       try {
         await service['fetchMongo']('/test-path');
@@ -79,8 +83,12 @@ describe('GenreApiService', () => {
 
       (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
-      await expect(service['fetchMongo']('/test-path')).rejects.toThrow(HttpException);
-      await expect(service['fetchMongo']('/test-path')).rejects.toThrow('Not Found');
+      await expect(service['fetchMongo']('/test-path')).rejects.toThrow(
+        HttpException,
+      );
+      await expect(service['fetchMongo']('/test-path')).rejects.toThrow(
+        'Not Found',
+      );
 
       try {
         await service['fetchMongo']('/test-path');
@@ -89,6 +97,5 @@ describe('GenreApiService', () => {
         expect((err as HttpException).getStatus()).toBe(404);
       }
     });
-
   });
 });
