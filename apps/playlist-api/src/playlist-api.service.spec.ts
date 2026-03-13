@@ -1,32 +1,35 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
-import { GenreApiService } from './genre-api.service';
+import { PlaylistApiService } from './playlist-api.service';
 import { HttpException } from '@nestjs/common';
 import {
   mockConfigService,
   mockLoggerService,
   createMockResponse,
-} from '../test/genre-api.mock';
+} from '../test/playlist-api.mock';
 
-describe('GenreApiService', () => {
-  let service: GenreApiService;
+describe('PlaylistApiService', () => {
+  let service: PlaylistApiService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        GenreApiService,
+        PlaylistApiService,
         { provide: ConfigService, useValue: mockConfigService },
         { provide: LoggerService, useValue: mockLoggerService },
       ],
     }).compile();
 
-    service = module.get<GenreApiService>(GenreApiService);
+    service = module.get<PlaylistApiService>(PlaylistApiService);
 
-    // Make sure we stub config to return what we expect
+    // Stub get methods explicitly
     jest
       .spyOn(service as any, 'mongoServiceUrl', 'get')
       .mockReturnValue('http://mongo-mock:3000');
+    jest
+      .spyOn(service as any, 'videoServiceUrl', 'get')
+      .mockReturnValue('http://video-mock:3002');
 
     global.fetch = jest.fn();
   });
@@ -64,7 +67,7 @@ describe('GenreApiService', () => {
       }
     });
 
-    it('should throw an HttpException with statusText if body is empty or parsing throws', async () => {
+    it('should throw an HttpException with statusText if body is empty', async () => {
       const mockResponse = createMockResponse(
         false,
         404,
@@ -89,7 +92,7 @@ describe('GenreApiService', () => {
     });
 
     it('should return parsed json successfully if response is ok', async () => {
-      const expectedData = { _id: 'test_id', name: 'Action' };
+      const expectedData = { _id: 'test_id', title: 'Favorites' };
       const mockResponse = createMockResponse(
         true,
         200,
@@ -110,7 +113,7 @@ describe('GenreApiService', () => {
     });
 
     it('should include stringified body if passed in options', async () => {
-      const expectedData = { _id: 'test_id', name: 'Action' };
+      const expectedData = { _id: 'test_id', title: 'Favorites' };
       const mockResponse = createMockResponse(
         true,
         201,
@@ -120,7 +123,7 @@ describe('GenreApiService', () => {
       );
       (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
-      const payload = { name: 'Action' };
+      const payload = { title: 'Favorites' };
 
       const result = await service['fetchMongo']('/test-path', {
         method: 'POST',
@@ -141,48 +144,53 @@ describe('GenreApiService', () => {
   });
 
   describe('CRUD operations', () => {
-    it('findAll should call fetchMongo with GET /genres', async () => {
+    it('findAll should call fetchMongo with GET /playlists', async () => {
       jest.spyOn(service as any, 'fetchMongo').mockResolvedValue([]);
       await service.findAll();
 
-      expect(service['fetchMongo']).toHaveBeenCalledWith('/genres');
+      expect(service['fetchMongo']).toHaveBeenCalledWith('/playlists');
     });
 
-    it('findOne should call fetchMongo with GET /genres/:id', async () => {
+    it('findOne should call fetchMongo with GET /playlists/:id', async () => {
       jest.spyOn(service as any, 'fetchMongo').mockResolvedValue({});
       await service.findOne('123');
 
-      expect(service['fetchMongo']).toHaveBeenCalledWith('/genres/123');
+      expect(service['fetchMongo']).toHaveBeenCalledWith('/playlists/123');
     });
 
-    it('create should call fetchMongo with POST /genres', async () => {
-      jest.spyOn(service as any, 'fetchMongo').mockResolvedValue([]);
-      const createDto = { name: 'Horror', description: 'Scary movies' };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    it('create should call fetchMongo with POST /playlists', async () => {
+      jest.spyOn(service as any, 'fetchMongo').mockResolvedValue({});
+      const createDto = { name: 'My List', author: 'user1' }; // Schema uses `name` not `title`
+      jest
+        .spyOn(service as any, 'assertVideosExist')
+        .mockResolvedValue(undefined);
       await service.create(createDto as any);
 
-      expect(service['fetchMongo']).toHaveBeenCalledWith('/genres', {
+      expect(service['fetchMongo']).toHaveBeenCalledWith('/playlists', {
         method: 'POST',
         body: JSON.stringify(createDto),
       });
     });
 
-    it('update should call fetchMongo with PUT /genres/:id', async () => {
-      jest.spyOn(service as any, 'fetchMongo').mockResolvedValue([]);
-      const updateDto = { name: 'Thriller' };
+    it('update should call fetchMongo with PUT /playlists/:id', async () => {
+      jest.spyOn(service as any, 'fetchMongo').mockResolvedValue({});
+      jest
+        .spyOn(service as any, 'assertVideosExist')
+        .mockResolvedValue(undefined);
+      const updateDto = { name: 'Updated List' }; // Schema uses `name`
       await service.update('123', updateDto);
 
-      expect(service['fetchMongo']).toHaveBeenCalledWith('/genres/123', {
+      expect(service['fetchMongo']).toHaveBeenCalledWith('/playlists/123', {
         method: 'PUT',
         body: JSON.stringify(updateDto),
       });
     });
 
-    it('remove should call fetchMongo with DELETE /genres/:id', async () => {
+    it('remove should call fetchMongo with DELETE /playlists/:id', async () => {
       jest.spyOn(service as any, 'fetchMongo').mockResolvedValue({});
       await service.remove('123');
 
-      expect(service['fetchMongo']).toHaveBeenCalledWith('/genres/123', {
+      expect(service['fetchMongo']).toHaveBeenCalledWith('/playlists/123', {
         method: 'DELETE',
       });
     });
