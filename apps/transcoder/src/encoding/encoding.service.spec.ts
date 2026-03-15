@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import { S3Service } from '../s3/s3.service';
 import { EncodingService } from './encoding.service';
@@ -9,7 +8,7 @@ import { EncodingEvent, EncodingContext } from './constants/log-events';
 import * as path from 'path';
 import * as fs from 'fs';
 import {
-  mockConfigService,
+  mockTranscoderConfig,
   mockLoggerService,
   mockS3Service,
   mockFfmpegChain,
@@ -49,7 +48,10 @@ describe('EncodingService', () => {
       providers: [
         EncodingService,
         { provide: LoggerService, useValue: mockLoggerService },
-        { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: 'CONFIGURATION(transcoder)',
+          useValue: mockTranscoderConfig,
+        },
         { provide: S3Service, useValue: mockS3Service },
       ],
     }).compile();

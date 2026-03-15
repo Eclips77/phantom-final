@@ -3,13 +3,15 @@ import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from '@app/logger';
 import { GenreApiController } from './genre-api.controller';
 import { GenreApiService } from './genre-api.service';
-import { genreApiConfig } from './config/genre-api.config';
+import { genreApiConfig } from './config/app.config';
+import { genreApiValidationSchema } from './config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [genreApiConfig],
+      validationSchema: genreApiValidationSchema,
     }),
     LoggerModule,
   ],

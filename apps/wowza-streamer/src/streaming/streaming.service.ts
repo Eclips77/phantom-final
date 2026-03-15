@@ -1,21 +1,23 @@
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigType } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
+import { wowzaStreamerConfig } from '../config/app.config';
 
 @Injectable()
 export class StreamingService {
   constructor(
-    private readonly config: ConfigService,
+    @Inject(wowzaStreamerConfig.KEY)
+    private readonly config: ConfigType<typeof wowzaStreamerConfig>,
     private readonly logger: LoggerService,
   ) {}
 
   public async getStreamingUrl(videoId: string): Promise<{ url: string }> {
-    const mongoServiceUrl =
-      this.config.get<string>('MONGO_SERVICE_URL') ?? 'http://localhost:3001';
+    const mongoServiceUrl = this.config.mongoServiceUrl;
 
     this.logger.log('STREAMING_URL_REQUEST', 'StreamingService', { videoId });
 
@@ -45,12 +47,10 @@ export class StreamingService {
       // Generate Wowza streaming URL
       // Assuming Wowza is configured to pull from our S3 compatible storage
       // A common Wowza pattern for VOD (Video On Demand) over S3 is using an application like 'vods3'
-      const wowzaUrl =
-        this.config.get<string>('WOWZA_URL') ??
-        'http://wowza-server:1935/vods3/_definst_';
+      const wowzaUrl = this.config.wowzaUrl;
 
       // S3 path based on file path (e.g., s3://bucket-name/uploads/video.mp4)
-      const s3Bucket = this.config.get<string>('S3_BUCKET_NAME') ?? 'my-bucket';
+      const s3Bucket = this.config.s3BucketName;
 
       // Example Wowza VOD S3 format: http://wowza-server:1935/vods3/_definst_/mp4:amazonS3/bucket-name/uploads/video.mp4/playlist.m3u8
       const streamUrl = `${wowzaUrl}/mp4:amazonS3/${s3Bucket}/${videoId}/${videoData.fileName}/playlist.m3u8`;

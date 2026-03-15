@@ -5,25 +5,28 @@ import {
   InternalServerErrorException,
   HttpException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import type { CreatePlaylistDto } from './dto/create-playlist.dto';
 import type { UpdatePlaylistDto } from './dto/update-playlist.dto';
 import { PlaylistApiContext, PlaylistApiEvent } from './constants/log-events';
+import { playlistApiConfig } from './config/app.config';
 
 @Injectable()
 export class PlaylistApiService {
   constructor(
-    private readonly config: ConfigService,
+    @Inject(playlistApiConfig.KEY)
+    private readonly config: ConfigType<typeof playlistApiConfig>,
     private readonly logger: LoggerService,
   ) {}
 
   private get mongoServiceUrl(): string {
-    return this.config.get<string>('playlistApi.mongoServiceUrl')!;
+    return this.config.mongoServiceUrl;
   }
 
   private get videoServiceUrl(): string {
-    return this.config.get<string>('playlistApi.videoServiceUrl')!;
+    return this.config.videoServiceUrl;
   }
 
   private async fetchMongo<T>(path: string, init?: RequestInit): Promise<T> {

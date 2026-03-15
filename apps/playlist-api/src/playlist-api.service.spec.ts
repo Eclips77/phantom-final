@@ -1,10 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import { PlaylistApiService } from './playlist-api.service';
 import { HttpException } from '@nestjs/common';
 import {
-  mockConfigService,
   mockLoggerService,
   createMockResponse,
 } from '../test/playlist-api.mock';
@@ -16,20 +14,20 @@ describe('PlaylistApiService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlaylistApiService,
-        { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: 'CONFIGURATION(playlistApi)',
+          useValue: {
+            port: 3005,
+            logLevel: 'info',
+            mongoServiceUrl: 'http://mongo-mock:3000',
+            videoServiceUrl: 'http://video-mock:3002',
+          },
+        },
         { provide: LoggerService, useValue: mockLoggerService },
       ],
     }).compile();
 
     service = module.get<PlaylistApiService>(PlaylistApiService);
-
-    // Stub get methods explicitly
-    jest
-      .spyOn(service as any, 'mongoServiceUrl', 'get')
-      .mockReturnValue('http://mongo-mock:3000');
-    jest
-      .spyOn(service as any, 'videoServiceUrl', 'get')
-      .mockReturnValue('http://video-mock:3002');
 
     global.fetch = jest.fn();
   });

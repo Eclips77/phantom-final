@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import { StreamingService } from './streaming.service';
 import {
@@ -7,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  mockConfigService,
+  mockWowzaStreamerConfig,
   mockLoggerService,
 } from '../../test/wowza-streamer.mock';
 
@@ -19,8 +18,8 @@ describe('StreamingService', () => {
       providers: [
         StreamingService,
         {
-          provide: ConfigService,
-          useValue: mockConfigService,
+          provide: 'CONFIGURATION(wowzaStreamer)',
+          useValue: mockWowzaStreamerConfig,
         },
         {
           provide: LoggerService,
@@ -30,14 +29,6 @@ describe('StreamingService', () => {
     }).compile();
 
     service = module.get<StreamingService>(StreamingService);
-
-    // Make sure our mock gets return correct stub url explicitly for tests
-    jest.spyOn(service['config'], 'get').mockImplementation((key: string) => {
-      if (key === 'MONGO_SERVICE_URL') return 'http://mongo-mock:3001';
-      if (key === 'WOWZA_URL') return 'http://wowza-mock:1935/vods3/_definst_';
-      if (key === 'S3_BUCKET_NAME') return 'mock-bucket';
-      return null;
-    });
 
     // Mock global fetch
     global.fetch = jest.fn();

@@ -1,13 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import { GenreApiService } from './genre-api.service';
 import { HttpException } from '@nestjs/common';
-import {
-  mockConfigService,
-  mockLoggerService,
-  createMockResponse,
-} from '../test/genre-api.mock';
+import { mockLoggerService, createMockResponse } from '../test/genre-api.mock';
 
 describe('GenreApiService', () => {
   let service: GenreApiService;
@@ -16,17 +11,19 @@ describe('GenreApiService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GenreApiService,
-        { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: 'CONFIGURATION(genreApi)',
+          useValue: {
+            port: 3004,
+            logLevel: 'info',
+            mongoServiceUrl: 'http://mongo-mock:3000',
+          },
+        },
         { provide: LoggerService, useValue: mockLoggerService },
       ],
     }).compile();
 
     service = module.get<GenreApiService>(GenreApiService);
-
-    // Make sure we stub config to return what we expect
-    jest
-      .spyOn(service as any, 'mongoServiceUrl', 'get')
-      .mockReturnValue('http://mongo-mock:3000');
 
     global.fetch = jest.fn();
   });

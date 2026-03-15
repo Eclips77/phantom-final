@@ -6,21 +6,24 @@ import {
   InternalServerErrorException,
   HttpException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import type { CreateGenreDto } from './dto/create-genre.dto';
 import type { UpdateGenreDto } from './dto/update-genre.dto';
 import { GenreApiContext, GenreApiEvent } from './constants/log-events';
+import { genreApiConfig } from './config/app.config';
 
 @Injectable()
 export class GenreApiService {
   constructor(
-    private readonly config: ConfigService,
+    @Inject(genreApiConfig.KEY)
+    private readonly config: ConfigType<typeof genreApiConfig>,
     private readonly logger: LoggerService,
   ) {}
 
   private get mongoServiceUrl(): string {
-    return this.config.get<string>('genreApi.mongoServiceUrl')!;
+    return this.config.mongoServiceUrl;
   }
 
   private async fetchMongo<T>(path: string, init?: RequestInit): Promise<T> {
