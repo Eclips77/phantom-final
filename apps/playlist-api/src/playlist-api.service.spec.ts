@@ -162,6 +162,7 @@ describe('PlaylistApiService', () => {
       jest
         .spyOn(service as any, 'assertVideosExist')
         .mockResolvedValue(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await service.create(createDto as any);
 
       expect(service['fetchMongo']).toHaveBeenCalledWith('/playlists', {
