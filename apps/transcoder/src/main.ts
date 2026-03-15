@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { LoggerService } from '@app/logger';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { ConfigService } from '@nestjs/config';
+import { transcoderConfig, TranscoderConfig } from './config/app.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -11,11 +11,9 @@ async function bootstrap() {
 
   app.useLogger(app.get(LoggerService));
 
-  const configService = app.get(ConfigService);
-  const rabbitMqUrl =
-    configService.get<string>('RABBITMQ_URL') ?? 'amqp://localhost:5672';
-  const encodingQueue =
-    configService.get<string>('ENCODING_QUEUE') ?? 'video_encoding_queue';
+  const config = app.get<TranscoderConfig>(transcoderConfig.KEY);
+  const rabbitMqUrl = config.rabbitMq.url;
+  const encodingQueue = config.rabbitMq.encodingQueue;
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
@@ -29,7 +27,7 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
-  await app.listen(process.env.PORT ?? 3002);
+  await app.listen(config.port);
 }
 bootstrap().catch((err) => {
   console.error(err);

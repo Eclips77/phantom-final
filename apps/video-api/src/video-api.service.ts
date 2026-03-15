@@ -1,27 +1,31 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import type { Request as ExpressRequest } from 'express';
 import { randomUUID } from 'crypto';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { RabbitMqPublisher } from '@app/rabbit-mq';
 import { LoggerService } from '@app/logger';
 import { VideoApiContext, VideoApiEvent } from './constants/log-events';
+import { videoApiConfig } from './config/app.config';
 
 @Injectable()
 export class VideoApiService {
   constructor(
     private readonly rabbitMqPublisher: RabbitMqPublisher,
     private readonly logger: LoggerService,
-    private readonly config: ConfigService,
+    @Inject(videoApiConfig.KEY)
+    private readonly config: ConfigType<typeof videoApiConfig>,
   ) {}
 
   async processVideoUpload(
     createVideoDto: CreateVideoDto,
     file: Express.Multer.File,
   ) {
-    const mongoServiceUrl = this.config.get<string>(
-      'videoApi.mongoServiceUrl',
-    )!;
+    const mongoServiceUrl = this.config.mongoServiceUrl;
 
     this.logger.log(VideoApiEvent.FILE_SAVED, VideoApiContext.SERVICE, {
       fileName: file.filename,
@@ -97,9 +101,7 @@ export class VideoApiService {
     req: ExpressRequest,
     body?: unknown,
   ): Promise<T> {
-    const mongoServiceUrl = this.config.get<string>(
-      'videoApi.mongoServiceUrl',
-    )!;
+    const mongoServiceUrl = this.config.mongoServiceUrl;
     const url = `${mongoServiceUrl}${req.originalUrl}`;
 
     this.logger.log(VideoApiEvent.PROXY_REQUEST, VideoApiContext.SERVICE, {

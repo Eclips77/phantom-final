@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { LoggerService } from '@app/logger';
 import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import * as ffmpeg from 'fluent-ffmpeg';
@@ -7,7 +11,8 @@ import { EncodingEvent, EncodingContext } from './constants/log-events';
 import * as path from 'path';
 import * as fs from 'fs';
 import { S3Service } from '../s3/s3.service';
-import { ConfigService } from '@nestjs/config';
+import { ConfigType } from '@nestjs/config';
+import { transcoderConfig } from '../config/app.config';
 
 // Set ffmpeg path using the installer
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
@@ -17,7 +22,8 @@ export class EncodingService {
   constructor(
     private readonly logger: LoggerService,
     private readonly s3Service: S3Service,
-    private readonly config: ConfigService,
+    @Inject(transcoderConfig.KEY)
+    private readonly config: ConfigType<typeof transcoderConfig>,
   ) {}
 
   public async encodeVideo(event: EncodeVideoEvent): Promise<void> {
@@ -51,8 +57,7 @@ export class EncodingService {
       );
 
       // Upload encoded file to S3
-      const bucketName =
-        this.config.get<string>('S3_BUCKET_NAME') ?? 'my-bucket';
+      const bucketName = this.config.s3.bucketName;
       const destinationKey = `${videoId}/${path.basename(outputPath)}`;
 
       await this.s3Service.uploadFile(outputPath, bucketName, destinationKey);

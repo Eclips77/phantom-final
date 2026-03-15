@@ -3,13 +3,15 @@ import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from '@app/logger';
 import { PlaylistApiController } from './playlist-api.controller';
 import { PlaylistApiService } from './playlist-api.service';
-import { playlistApiConfig } from './config/playlist-api.config';
+import { playlistApiConfig } from './config/app.config';
+import { playlistApiValidationSchema } from './config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [playlistApiConfig],
+      validationSchema: playlistApiValidationSchema,
     }),
     LoggerModule,
   ],

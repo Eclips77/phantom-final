@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -9,19 +9,22 @@ import { VideoApiService } from './video-api.service';
 import { RabbitMqModule } from '@app/rabbit-mq';
 import { LoggerModule } from '@app/logger';
 import { GenreValidationPipe } from './pipes/genre-validation.pipe';
-import { videoApiConfig } from './config/video-api.config';
+import { videoApiConfig } from './config/app.config';
+import { videoApiValidationSchema } from './config/env.validation';
+import { ConfigType } from '@nestjs/config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [videoApiConfig],
+      validationSchema: videoApiValidationSchema,
     }),
     LoggerModule,
     MulterModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const uploadDir = config.get<string>('videoApi.uploadDir')!;
+      inject: [videoApiConfig.KEY],
+      useFactory: (config: ConfigType<typeof videoApiConfig>) => {
+        const uploadDir = config.uploadDir;
         if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -40,10 +43,10 @@ import { videoApiConfig } from './config/video-api.config';
       },
     }),
     RabbitMqModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        url: config.get<string>('videoApi.rabbitMq.url')!,
-        queue: config.get<string>('videoApi.rabbitMq.encodingQueue')!,
+      inject: [videoApiConfig.KEY],
+      useFactory: (config: ConfigType<typeof videoApiConfig>) => ({
+        url: config.rabbitMq.url,
+        queue: config.rabbitMq.encodingQueue,
         durable: false,
       }),
     }),

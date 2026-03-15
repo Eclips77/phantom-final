@@ -1,8 +1,17 @@
-export const mockConfigService = {
-  get: jest.fn().mockImplementation((key: string) => {
-    if (key === 'S3_BUCKET_NAME') return 'mock-bucket';
-    return null;
-  }),
+export const mockTranscoderConfig = {
+  port: 3002,
+  logLevel: 'info',
+  rabbitMq: {
+    url: 'amqp://localhost:5672',
+    encodingQueue: 'test_queue',
+  },
+  s3: {
+    bucketName: 'mock-bucket',
+    region: 'us-east-1',
+    endpoint: 'http://minio:9000',
+    accessKeyId: 'minioadmin',
+    secretAccessKey: 'minioadmin',
+  },
 };
 
 export const mockLoggerService = {

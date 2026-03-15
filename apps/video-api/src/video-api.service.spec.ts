@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '@app/logger';
 import { RabbitMqPublisher } from '@app/rabbit-mq';
 import { VideoApiService } from './video-api.service';
 import { InternalServerErrorException } from '@nestjs/common';
 import {
-  mockConfigService,
   mockLoggerService,
   mockRabbitMqPublisher,
   createMockResponse,
@@ -21,19 +19,25 @@ describe('VideoApiService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VideoApiService,
-        { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: 'CONFIGURATION(videoApi)',
+          useValue: {
+            port: 3001,
+            logLevel: 'info',
+            mongoServiceUrl: 'http://mongo-mock:3000',
+            uploadDir: '/tmp/uploads',
+            rabbitMq: {
+              url: 'amqp://localhost:5672',
+              encodingQueue: 'test_queue',
+            },
+          },
+        },
         { provide: LoggerService, useValue: mockLoggerService },
         { provide: RabbitMqPublisher, useValue: mockRabbitMqPublisher },
       ],
     }).compile();
 
     service = module.get<VideoApiService>(VideoApiService);
-
-    // Mock config get so it works regardless of which method is called
-    jest.spyOn(service['config'], 'get').mockImplementation((key: string) => {
-      if (key === 'videoApi.mongoServiceUrl') return 'http://mongo-mock:3000';
-      return null;
-    });
 
     global.fetch = jest.fn();
   });
