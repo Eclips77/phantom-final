@@ -23,7 +23,7 @@ spec:
             - name: LOG_LEVEL
               value: {{ .Values.global.logLevel }}
             - name: MONGO_SERVICE_URL
-              value: {{ .Values.mongo.url }}
+              value: {{ .Values.mongoService.url }}
             - name: VIDEO_SERVICE_URL
               value: "http://video-api:{{ .Values.videoApi.port }}"
 ---
