@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mongo-service
+spec:
+  replicas: {{ .Values.mongoService.replicaCount }}
+  selector:
+    matchLabels:
+      app: mongo-service
+  template:
+    metadata:
+      labels:
+        app: mongo-service
+    spec:
+      containers:
+        - name: mongo-service
+          image: "{{ .Values.mongoService.image.repository }}:{{ .Values.mongoService.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.mongoService.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.mongoService.port }}"
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel }}
+            - name: MONGODB_URI
+              value: {{ .Values.mongo.url }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  selector:
+    app: mongo-service
+  ports:
+    - protocol: TCP
+      port: {{ .Values.mongoService.port }}
+      targetPort: {{ .Values.mongoService.port }}

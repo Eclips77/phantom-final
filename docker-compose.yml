@@ -24,6 +24,22 @@ services:
     networks:
       - app-network
 
+  mongo-service:
+    build:
+      context: .
+      dockerfile: apps/mongo-service/Dockerfile
+    container_name: mongo-service
+    ports:
+      - "${MONGO_SERVICE_PORT:-3006}:${MONGO_SERVICE_PORT:-3006}"
+    environment:
+      - PORT=${MONGO_SERVICE_PORT:-3006}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/streaming-platform}
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+
   wowza-streamer:
     build:
       context: .
@@ -34,11 +50,11 @@ services:
     environment:
       - PORT=${WOWZA_STREAMER_PORT:-3003}
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo-service:3006}
       - WOWZA_URL=${WOWZA_URL:-http://wowza-server:1935/vods3/_definst_}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME:-my-bucket}
     depends_on:
-      - mongo
+      - mongo-service
     networks:
       - app-network
 
@@ -51,7 +67,7 @@ services:
       - "${VIDEO_API_PORT:-3001}:${VIDEO_API_PORT:-3001}"
     environment:
       - PORT=${VIDEO_API_PORT:-3001}
-      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo-service:3006}
       - UPLOAD_DIR=${UPLOAD_DIR:-/usr/src/app/uploads}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://rabbitmq:5672}
       - ENCODING_QUEUE=${ENCODING_QUEUE:-video_encoding_queue}
@@ -60,7 +76,7 @@ services:
       - video-uploads:/usr/src/app/uploads
     depends_on:
       - rabbitmq
-      - mongo
+      - mongo-service
     networks:
       - app-network
 
@@ -73,10 +89,10 @@ services:
       - "${GENRE_API_PORT:-3004}:${GENRE_API_PORT:-3004}"
     environment:
       - PORT=${GENRE_API_PORT:-3004}
-      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo-service:3006}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
-      - mongo
+      - mongo-service
     networks:
       - app-network
 
@@ -89,11 +105,11 @@ services:
       - "${PLAYLIST_API_PORT:-3005}:${PLAYLIST_API_PORT:-3005}"
     environment:
       - PORT=${PLAYLIST_API_PORT:-3005}
-      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo:27017}
+      - MONGO_SERVICE_URL=${MONGO_SERVICE_URL:-http://mongo-service:3006}
       - VIDEO_SERVICE_URL=${VIDEO_SERVICE_URL:-http://video-api:3001}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
-      - mongo
+      - mongo-service
       - video-api
     networks:
       - app-network

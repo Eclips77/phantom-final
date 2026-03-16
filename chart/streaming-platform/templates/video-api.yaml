@@ -23,7 +23,7 @@ spec:
             - name: LOG_LEVEL
               value: {{ .Values.global.logLevel }}
             - name: MONGO_SERVICE_URL
-              value: {{ .Values.mongo.url }}
+              value: {{ .Values.mongoService.url }}
             - name: RABBITMQ_URL
               value: {{ .Values.rabbitmq.url }}
             - name: ENCODING_QUEUE

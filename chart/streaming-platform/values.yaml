@@ -9,7 +9,15 @@ ingress:
   host: "api.streaming.local"
 
 mongo:
-  url: "http://mongo:27017" # Replace with actual mongodb service in k8s if external
+  url: "mongodb://mongo:27017/streaming-platform" # Replace with actual mongodb service in k8s if external
+
+mongoService:
+  replicaCount: 1
+  image:
+    repository: your-registry/mongo-service
+    tag: latest
+  port: 3006
+  url: "http://mongo-service:3006"
 
 rabbitmq:
   url: "amqp://rabbitmq:5672"
